@@ -188,6 +188,14 @@ function annotation_cs_menu() {
       'access arguments' => array(1),
       'file' => 'node.inc',
     ),
+    'fotoserien/verlinkungen/%node/manage' => array(
+      'title' => 'Manage Annotations',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('annotation_cs_node_form', 2),
+      'access callback' => 'annotation_cs_access_node',
+      'access arguments' => array(2),
+      'file' => 'node.inc',
+    ),
     /**'annotations/%annotation/delete' => array(
       'title' => 'Manage Annotations',
       'page callback' => 'annotation_cs_annotation_delete',
