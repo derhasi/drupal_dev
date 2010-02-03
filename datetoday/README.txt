@@ -13,6 +13,8 @@ There you can define what level shall has its own presentation, like 'last day'
 for 'yesterday'. All dates that do not fit selected presentation will use the
 'fallback' settings of the field.
 
+Settings in 'default' will be used for new date fields.
+
 
 
 The module integrates spans by default:
