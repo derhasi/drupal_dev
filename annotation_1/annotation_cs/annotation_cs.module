@@ -18,13 +18,19 @@ function annotation_cs_block($op = 'list', $delta = 0, $edit = array()) {
     return $blocks;
   }
   else if ($op == 'configure' && $delta == 0) {
-    $form = array();
+    //dpm($edit);
+    $form['markuplink'] = array(
+      '#type' => 'markup',
+      '#value' =>  l(t('Annotation CS Settings page'), 'admin/settings/annotation_cs'),
+      '#weight' => -90,
+    );
     return $form;
   }
   else if ($op == 'save' && $delta == 0) {
     //variable_set('mymodule_block_items', $edit['items']);
   }
   else if ($op == 'view') {
+    //dpm($edit);
     switch($delta) {
       case 0:
         $block = annotation_cs_block_view();
@@ -37,9 +43,11 @@ function annotation_cs_block($op = 'list', $delta = 0, $edit = array()) {
 
 /**
  * View it.
+ *
+ * Get the current annotations.
  */
 function annotation_cs_block_view() {
-  $pos = variable_get('annotation_cs_object_position', 1);
+  $pos = _annotation_cs_node_object_position();
   $nid = arg($pos);
   $node = node_load($nid);
   $node_types = variable_get('annotation_cs_node_types', array());
@@ -53,6 +61,28 @@ function annotation_cs_block_view() {
     $block = NULL;
   }
   return $block;
+}
+
+/**
+ * Retrieve the position to search for in the current page view.
+ * @param $path
+ *   if not set defaults to current path
+ * @return
+ *  position of node object in path, defined by annotation_cs setting
+ */
+function _annotation_cs_node_object_position($path = NULL) {
+  if (!isset($path)) $path = $_GET['q'];
+
+  $set = variable_get('annotation_cs_object_position_extended','');
+
+  // Find the first match on path
+  foreach($set as $spec) {
+    if (drupal_match_path($path, $spec['path'])) {
+      return $spec['arg'];
+    }
+  }
+  // Default position
+  return variable_get('annotation_cs_object_position', 1);
 }
 
 /**
@@ -134,9 +164,10 @@ function annotation_cs_annotation_info_alter(&$info) {
 function annotation_cs_user_form(&$form_state, $annotation) {
 
   $set = variable_get('annotation_cs_user_view', array('view' => 'freunde', 'display' => 'page_1'));
-
   $view = views_get_view($set['view']);
-  if (0) {
+
+  if (!$view) {
+    drupal_set_message('View %view for annotation_cs seems not to exist!', array('%view' => $set['view']),'error');
     GLOBAL $user;
     $options = array($user->uid => $user->name);
   }
@@ -295,11 +326,48 @@ function annotation_cs_settings_form(&$form_state) {
   );
   $form['annotation_cs_object_position'] = array(
     '#type' => 'select',
-    '#title' => t('Menu get object position'),
+    '#title' => t('Default menu get object position'),
     '#options' => range(0,30),
     '#default_value' => variable_get('annotation_cs_object_position', 1),
     '#description' => t('Position of the node ID in the URL. This NID will be used to get the node object for the annotations.'),
   );
+
+  // EXTENDED Arg position
+  //Retrieve a new empty setting, without duplicate last empty ones
+  $varset = variable_get('annotation_cs_object_position_extended', array());
+  $set = array();
+  // Cleanup empty ones
+  if (is_array($varset) && count($varset)) {
+    foreach ($varset as $id => $vars) {
+      if ($vars['path']) {
+        $set[] = $vars;
+      }
+    }
+  }
+  // Add new empty
+  $set[] = array('path' => '', 'arg' => '');
+
+  $form['annotation_cs_object_position_extended'] = array(
+    '#tree' => TRUE,
+    '#type' => 'fieldset',
+    '#title' => t('Extended menu get object position'),
+    '#description' => t('By this setting you can define a specific argument position for a special path.'
+                          .'<br/> You can use the * wildcard, like in block visibility settings.'),
+    '#collapsible' => TRUE,
+  );
+  // each setting
+  foreach ($set as $id => $vars) {
+    $form['annotation_cs_object_position_extended'][$id] = array(
+      '#type' => 'fieldset',
+      '#title' => ($vars['path']) ? $vars['path'] : t('New'),
+      '#collapsible' => TRUE,
+      '#collapsed' => $vars['path'],
+      'path' => array('#type' => 'textfield', '#default_value' => $vars['path'], '#title' => t('Path')),
+      'arg' => array('#type' => 'select','#options' => range(0,30),'#default_value' => $vars['arg'], '#title' => t('Position')),
+    );
+  }
+
+  // Node types
   $form['annotation_cs_node_types'] = array(
     '#type' => 'select',
     '#title' => t('Node types'),

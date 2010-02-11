@@ -1,3 +1,6 @@
+// $Id$;
+
+// Implements annotation on several pages.
 
 Drupal.behaviors.annotation_cs = function (context) {
   var sets = Drupal.settings.annotation_cs_control;
