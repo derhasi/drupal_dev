@@ -68,7 +68,7 @@ function annotation_cs_block_view() {
  * @param $path
  *   if not set defaults to current path
  * @return
- *  position of node object in path, defined by annotation_cs setting
+ *  specified position value for first match in settings
  */
 function _annotation_cs_node_object_position($path = NULL) {
   if (!isset($path)) $path = $_GET['q'];
@@ -364,6 +364,7 @@ function annotation_cs_settings_form(&$form_state) {
       '#collapsed' => $vars['path'],
       'path' => array('#type' => 'textfield', '#default_value' => $vars['path'], '#title' => t('Path')),
       'arg' => array('#type' => 'select','#options' => range(0,30),'#default_value' => $vars['arg'], '#title' => t('Position')),
+      'description' => array('#type' => 'textfield', '#default_value' => $vars['description'], '#title' => 'Description', '#description' => t('Remark for administratvie use only')),
     );
   }
 
