@@ -1,7 +1,0 @@
-; $Id$
-name = DateToday
-description = Provides an additional formatter for cck date fields, to show 'today' in dates.
-core = 6.x
-version = dev
-package = Date/Time
-dependencies[] = date_api
