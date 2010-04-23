@@ -2,5 +2,4 @@ This is an experimentation branch for custom_breadcrumbs patches
 [1] http://drupal.org/node/687512
 [2] http://drupal.org/node/754494
 
-A patched custom_breadcrumbs module (with [2]) is located in this repository.
-It is necessary for cb_menuidentifier to work.
+It contains additional identifiers for patch in [1].
