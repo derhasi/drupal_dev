@@ -1,0 +1,200 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ *  Module to restrict exposed filter options, to the result of a view.
+ *
+ *  This module was inspired by views_filters_selective of views_hacks project.
+ *  @see http://drupal.org/project/views_hacks
+ */
+
+/**
+ * Implementation of hook_views_api().
+ */
+function views_frobv_views_api() {
+  return array(
+    'api' => 2.0,
+  );
+}
+
+/**
+ * Implementation of hook_form_FORMID_alter() for views_exposed_form.
+ */
+function views_frobv_form_views_exposed_form_alter(&$form, $form_state) {
+  // Go through each filter checking for a 'frobv' setting
+  foreach ($form_state['view']->filter as $field => $filter) {
+    if ($filter->options['exposed']) {
+
+      // Form element is designated by the element ID which is user-configurable
+      $field_id = $form['#info']["filter-$field"]['value'];
+      if (!isset($form[$field_id]['#options'])) continue;
+
+      // If using selective filters, filter the value_options based on view results
+      if ($filter->options['expose']['views_frobv']) {
+
+        static $results = NULL;
+        static $query_fields = NULL;
+
+        if (empty($results[$field_id])) {
+
+          dpm($filter);
+
+
+        }
+        if (!empty($results[$resultset])) {
+          if (!isset($field_alias)) {
+            // Do nothing.
+          }
+          else {
+            $options = array();
+            $null_option_exists = FALSE;
+            foreach ($results[$resultset] as $row) {
+              if (isset($row->$field_alias)) {
+                $options[$row->$field_alias] = TRUE;
+              }
+              else if (is_null($row->$field_alias)) {
+                $null_option_exists = TRUE;
+              }
+            }
+            if ($filter->options['expose']['optional']) {
+              $options['All'] = TRUE;
+            }
+
+            $form[$field_id]['#options'] = _views_frobv_reduce_options($form[$field_id]['#options'], array_keys($options));
+          }
+        }
+      }
+    }
+  }
+}
+
+
+/**
+ * Helper function to reduce #options arrays (that can contain arrays or objects).
+ * @see form_select_options()
+ *
+ * @param $options
+ *  an options array, that can be passed to FAPI #options
+ * @param $keys
+ *  array of keys of the options array to reduce to.
+ */
+function _views_frobv_reduce_options($options, $keys) {
+
+  $return_options = array();
+  foreach ($options as $id => $option) {
+    // option is an optgroup, so check the opgtroup childrens
+    if (is_array($option)) {
+      $result = _views_fiters_selective_reduce_options($option, $keys);
+      if (!empty($return)) $return_options[$id] = $result;
+    }
+    // is an object, and could contain multiple items
+    else if (is_object($option)) {
+      $result = _views_filters_selective_reduce_options($option->option, $keys);
+      if (!empty($result)) {
+        $option->option = $result;
+        $return_options[$id] = $option;
+      }
+    }
+    // default key => string relation
+    else {
+      if (in_array($id, $keys)) {
+        $return_options[$id] = $option;
+      }
+    }
+  }
+  return $return_options;
+}
+
+/**
+ * Implementation of hook_form_FORMID_alter() for views_ui_config_item_form.
+ */
+function views_frobv_form_views_ui_config_item_form_alter(&$form, $form_state) {
+  if (empty($form['options']['expose'])) return;
+
+  // Is this a field we can override?
+  $overrideable = array('select', 'checkboxes', 'radios');
+  if (!in_array($form['options']['value']['#type'], $overrideable)) {
+    return;
+  }
+
+  // Build form elements for the right side of the exposed filter form
+  $right = array();
+
+  $right['views_frobv'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Limit list to view result'),
+    '#default_value' => @$form_state['handler']->options['expose']['views_frobv'],
+    '#description' => t(
+      'If checked, the only items presented to the user will be the ones present in the selected view\'s field.'
+    ),
+  );
+
+  $views_options = _views_frobv_view_get_options();
+
+  $right['views_frobv_viewfield'] = array(
+    '#type' => 'select',
+    '#title' => t('View field to restrict values to'),
+    '#default_value' => @$form_state['handler']->options['expose']['views_frobv_viewfield'],
+    '#description' => 'descr',
+    '#options' => _views_frobv_view_get_options(),
+    '#process' => array('views_process_dependency'),
+    '#dependency' => array(
+      'edit-options-expose-views-frobv' => array(1),
+    ),
+  );
+  $right['views_frobv_pass_arguments'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Pass arguments to view'),
+    '#default_value' =>  @$form_state['handler']->options['expose']['views_frobv_pass_arguments'],
+    '#process' => array('views_process_dependency'),
+    '#dependency' => array(
+      'edit-options-expose-views-frobv' => array(1),
+    ),
+  );
+  $right['views_frobv_pass_exposed'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Pass exposed values to view'),
+    '#default_value' =>  @$form_state['handler']->options['expose']['views_frobv_pass_exposed'],
+    '#process' => array('views_process_dependency'),
+    '#dependency' => array(
+      'edit-options-expose-views-frobv' => array(1),
+    ),
+  );
+
+  $expose = $form['options']['expose'];
+  $first_chunk = array_splice($expose, 0, array_search('end_checkboxes', array_keys($expose)));
+  $form['options']['expose'] = array_merge($first_chunk, $right, $expose);
+}
+
+/**
+ * Helper function to retrieve active views with its displays and fields.
+ */
+function _views_frobv_view_get_options() {
+  $views = views_get_all_views();
+
+  $options = array();
+
+  foreach ($views as $view_name => $view) {
+    if (!$view->disabled) {
+      $options_view = array();
+      foreach ($view->display as $display_id => $display) {
+
+        // Return default display, for non overriden fields
+        if (!isset($display->display_options['fields'])) {
+          $display = $view->display;
+        }
+        if (isset($display->display_options['fields'])) {
+          foreach ($display->display_options['fields'] as $fid => $field) {
+            $val = ($field['label']) ? $field['label'] : $fid;
+            $options_view["$view_name:$display_id:$fid"] = "$display_id : $val";
+          }
+        }
+      }
+      if (!empty($options_view)) {
+        $options[$view_name] = $options_view;
+      }
+    }
+  }
+  return $options;
+}
