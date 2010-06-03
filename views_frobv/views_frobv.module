@@ -50,6 +50,11 @@ function views_frobv_form_views_exposed_form_alter(&$form, $form_state) {
         if (!$pass_exposed) {
           $view->set_exposed_input(array('dummy' => TRUE));
         }
+        else {
+          // Use the original view's exposed input. This may lead to $_GET, if
+          // there was given no other input.
+          $view->set_exposed_input($filter->view->exposed_input);
+        }
 
         // Set correct display
         $view->set_display($display_id);
