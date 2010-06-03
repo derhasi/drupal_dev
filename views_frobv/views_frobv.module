@@ -77,7 +77,10 @@ function views_frobv_form_views_exposed_form_alter(&$form, $form_state) {
               $options['All'] = TRUE;
             }
 
-            $form[$field_id]['#options'] = _views_frobv_reduce_options($form[$field_id]['#options'], array_keys($options));
+            // This option
+            $preserve_hierarchy = (int) @$filter->options['expose']['views_frobv_preserve_hierarchy'];
+
+            $form[$field_id]['#options'] = _views_frobv_reduce_options($form[$field_id]['#options'], array_keys($options), $preserve_hierarchy);
           }
         }
       }
@@ -94,12 +97,24 @@ function views_frobv_form_views_exposed_form_alter(&$form, $form_state) {
  *  an options array, that can be passed to FAPI #options
  * @param $keys
  *  array of keys of the options array to reduce to.
+ * @param $preserve_hierarchy
+ *   hierarchy is indicated by a '-' in front of the caption. This will collide
+ *   with captions that prepend '-' by itself.
+ *
+ * @return
+ *  array of options for select & co, see FAPI #options.
  */
-function _views_frobv_reduce_options($options, $keys) {
+function _views_frobv_reduce_options($options, $keys, $preserve_hierarchy = FALSE) {
 
   $return_options = array();
+
+  // Get additional keys to preserve
+  if ($preserve_hierarchy) {
+    $keys = _views_frobv_preserve_for_hierarchy($options, $keys, $preserve_hierarchy);
+  }
+
   foreach ($options as $id => $option) {
-    // option is an optgroup, so check the opgtroup childrens
+    // option is an optgroup, so check the optgroup children
     if (is_array($option)) {
       $result = _views_fiters_selective_reduce_options($option, $keys);
       if (!empty($return)) $return_options[$id] = $result;
@@ -121,6 +136,130 @@ function _views_frobv_reduce_options($options, $keys) {
   }
   return $return_options;
 }
+
+/**
+ * Helper function to flatten option array.
+ */
+function _views_frobv_flatten_options($options) {
+
+  $flatten = array();
+
+  foreach ($options as $id => $option) {
+    // option is an optgroup, so check the optgroup children
+    if (is_array($option)) {
+      $result = _views_frobv_flatten_options($option);
+      // no array_merge, need to preserve keys
+      foreach ($result as $i => $res) {
+        $flatten[$i] = $res;
+      }
+    }
+    // is an object, and could contain multiple items
+    else if (is_object($option)) {
+      $result = _views_frobv_flatten_options($option->option);
+      // no array_merge, need to preserve keys
+      foreach ($result as $i => $res) {
+        $flatten[$i] = $res;
+      }
+    }
+    // default key => string relation
+    else {
+      $flatten[$id] = $option;
+    }
+  }
+  return $flatten;
+}
+
+/**
+ * Helper function to preserve child or parent entries in option array.
+ */
+function _views_frobv_preserve_for_hierarchy($options, $keys, $preserve_levels) {
+  // Flatten all current options, and inderectly add keys due to hierarchy
+  // preservation.
+  if ($preserve_levels != 0) {
+    $flatten = _views_frobv_flatten_options($options);
+
+    $level = 0;
+    // Levels of parents, that are automatically added on parent preservation.
+    $preserved_parents = array();
+    // Levels the items are automatically added, due to child preservation
+    $last_found_levels = array();
+
+    // Keys that will be added to $keys due to preservation.
+    $additional_keys = array();
+    $last_level = -1;
+    $last_id = NULL;
+
+    // Run each option
+    foreach ($flatten as $id => $caption) {
+      if ($id == 'All') continue;
+      // hierarchy level of this option
+      // Indicator for hierarchy is '-'.
+      $this_level = strlen($caption) - strlen(ltrim($caption, '-'));
+
+      // preserve parents
+      if ($preserve_levels < 0) {
+        // Not stepped up
+        if ($this_level <= $last_level) {
+        // Some former parents are not parents for this one anymore.
+          foreach ($preserved_parents as $l => $parents) {
+            if ($l >= $this_level) {
+              unset($preserved_parents[$l]);
+            }
+          }
+        }
+        // Stepped up and last id is available (so not first element).
+        elseif (isset($last_id)) {
+          // Add former option to preservation
+          $preserved_parents[$last_level][] = $last_id;
+        }
+
+        // Actual option is in keys, so some parents can go to additional keys.
+        if (in_array($id, $keys)) {
+          // Set parents as additional keys, that are defined levels beneath.
+          foreach ($preserved_parents as $l => $parents) {
+            if ($this_level - $preserve_levels > $l) {
+              $additional_keys += $parents; // merge arrays
+              unset($preserved_parents[$l]);
+            }
+          }
+        }
+
+      }
+      // Preserve children
+      else {
+        // Actual option is in keys, further children will .
+        if (in_array($id, $keys)) {
+          $last_found_levels[$this_level] = $this_level;
+        }
+        // Stepped down or stayed, so new children available
+        elseif (count($last_found_levels) && $this_level <= $last_level) {
+          foreach ($last_found_levels as $lid => $level) {
+            if ($lid >= $this_level) {
+              unset($last_found_levels[$lid]);
+            }
+          }
+        }
+        // Level is in preserve child tolerance
+        elseif (count($last_found_levels) && max($last_found_levels) + $preserve_levels >= $this_level) {
+          $additional_keys[] = $id;
+        }
+        // stepped up and not in tolerance
+        else {
+          // last found levels are still valid
+        }
+      }
+
+      // Set this level to next one's last level.
+      $last_level = $this_level;
+      $last_id = $id;
+    }
+    $keys = array_merge($keys, $additional_keys);
+
+  }
+
+  return $keys;
+}
+
 
 /**
  * Implementation of hook_form_FORMID_alter() for views_ui_config_item_form.
@@ -171,12 +310,27 @@ function views_frobv_form_views_ui_config_item_form_alter(&$form, $form_state) {
   $right['views_frobv_pass_exposed'] = array(
     '#type' => 'checkbox',
     '#title' => t('Pass exposed values to view'),
-    '#default_value' =>  @$form_state['handler']->options['expose']['views_frobv_pass_exposed'],
+    '#default_value' =>  (bool) @$form_state['handler']->options['expose']['views_frobv_pass_exposed'],
     '#process' => array('views_process_dependency'),
     '#dependency' => array(
       'edit-options-expose-views-frobv' => array(1),
     ),
   );
+
+  $options = drupal_map_assoc(range(-10,10));
+  $options[0] = t('Disabled');
+  $right['views_frobv_preserve_hierarchy'] = array(
+    '#type' => 'select',
+    '#title' => t('Preserve hierarchy'),
+    '#default_value' => (int) @$form_state['handler']->options['expose']['views_frobv_preserve_hierarchy'],
+    '#options' => $options,
+    '#description' => t('Select the level parent or children entries are preserved in a hierarchical select. So these items will be present, if they are not in the result set of the given view. Level < 0 preserves levels of parents, level > 0 preserves levels of children.'),
+    '#process' => array('views_process_dependency'),
+    '#dependency' => array(
+      'edit-options-expose-views-frobv' => array(1),
+    ),
+  );
+
 
   $expose = $form['options']['expose'];
   $first_chunk = array_splice($expose, 0, array_search('end_checkboxes', array_keys($expose)));
