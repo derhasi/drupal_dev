@@ -287,7 +287,7 @@ function views_frobv_form_views_ui_config_item_form_alter(&$form, $form_state) {
 
   $right['views_frobv_viewfield'] = array(
     '#type' => 'select',
-    '#title' => t('View and field to restrict values to'),
+    '#title' => t('View and field to use for limitation'),
     '#default_value' => @$form_state['handler']->options['expose']['views_frobv_viewfield'],
     '#description' => t('Select the field of a view display. It\'s result will be used to reduce this exposed filters options.'),
     '#options' => _views_frobv_view_get_options(),
@@ -300,7 +300,7 @@ function views_frobv_form_views_ui_config_item_form_alter(&$form, $form_state) {
     '#type' => 'checkbox',
     '#title' => t('Pass arguments to view'),
     '#default_value' =>  @$form_state['handler']->options['expose']['views_frobv_pass_arguments'],
-    '#descritpion' => t('Check this to pass the argument values of this view to the selected view.'),
+    '#description' => t('Check this to pass the argument values of this view to the selected view.'),
     '#process' => array('views_process_dependency'),
     '#dependency' => array(
       'edit-options-expose-views-frobv' => array(1),
