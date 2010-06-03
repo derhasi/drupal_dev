@@ -280,9 +280,7 @@ function views_frobv_form_views_ui_config_item_form_alter(&$form, $form_state) {
     '#type' => 'checkbox',
     '#title' => t('Limit list to view result'),
     '#default_value' => @$form_state['handler']->options['expose']['views_frobv'],
-    '#description' => t(
-      'If checked, the only items presented to the user will be the ones present in the selected view\'s field.'
-    ),
+    '#description' => t('If checked, the only items presented to the user will be the ones listed in the selected view\'s field.'),
   );
 
   $views_options = _views_frobv_view_get_options();
@@ -291,7 +289,7 @@ function views_frobv_form_views_ui_config_item_form_alter(&$form, $form_state) {
     '#type' => 'select',
     '#title' => t('View and field to restrict values to'),
     '#default_value' => @$form_state['handler']->options['expose']['views_frobv_viewfield'],
-    '#description' => 'descr',
+    '#description' => t('Select the field of a view display. It\'s result will be used to reduce this exposed filters options.'),
     '#options' => _views_frobv_view_get_options(),
     '#process' => array('views_process_dependency'),
     '#dependency' => array(
@@ -302,6 +300,7 @@ function views_frobv_form_views_ui_config_item_form_alter(&$form, $form_state) {
     '#type' => 'checkbox',
     '#title' => t('Pass arguments to view'),
     '#default_value' =>  @$form_state['handler']->options['expose']['views_frobv_pass_arguments'],
+    '#descritpion' => t('Check this to pass the argument values of this view to the selected view.'),
     '#process' => array('views_process_dependency'),
     '#dependency' => array(
       'edit-options-expose-views-frobv' => array(1),
@@ -311,6 +310,7 @@ function views_frobv_form_views_ui_config_item_form_alter(&$form, $form_state) {
     '#type' => 'checkbox',
     '#title' => t('Pass exposed values to view'),
     '#default_value' =>  (bool) @$form_state['handler']->options['expose']['views_frobv_pass_exposed'],
+    '#description' => t('Check this to pass the current views exposed filter values to the selected view.'),
     '#process' => array('views_process_dependency'),
     '#dependency' => array(
       'edit-options-expose-views-frobv' => array(1),
@@ -324,7 +324,10 @@ function views_frobv_form_views_ui_config_item_form_alter(&$form, $form_state) {
     '#title' => t('Preserve hierarchy'),
     '#default_value' => (int) @$form_state['handler']->options['expose']['views_frobv_preserve_hierarchy'],
     '#options' => $options,
-    '#description' => t('Select the level parent or children entries are preserved in a hierarchical select. So these items will be present, if they are not in the result set of the given view. Level < 0 preserves levels of parents, level > 0 preserves levels of children.'),
+    '#description' => t('Select the level parent or children entries are preserved in a hierarchical select.
+                        So these items will be present, if they are not in the result set of the given view.
+                        Level < 0 preserves levels of parents, level > 0 preserves levels of children.
+                        Hierarchy levels are indicated through a \'-\'.'),
     '#process' => array('views_process_dependency'),
     '#dependency' => array(
       'edit-options-expose-views-frobv' => array(1),
