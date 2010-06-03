@@ -121,12 +121,12 @@ function _views_frobv_reduce_options($options, $keys, $preserve_hierarchy = FALS
   foreach ($options as $id => $option) {
     // option is an optgroup, so check the optgroup children
     if (is_array($option)) {
-      $result = _views_fiters_selective_reduce_options($option, $keys);
+      $result = _views_frobv_reduce_options($option, $keys);
       if (!empty($return)) $return_options[$id] = $result;
     }
     // is an object, and could contain multiple items
     else if (is_object($option)) {
-      $result = _views_filters_selective_reduce_options($option->option, $keys);
+      $result = _views_frobv_reduce_options($option->option, $keys);
       if (!empty($result)) {
         $option->option = $result;
         $return_options[$id] = $option;
