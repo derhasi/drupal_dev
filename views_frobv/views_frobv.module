@@ -30,7 +30,7 @@ function views_frobv_form_views_exposed_form_alter(&$form, $form_state) {
       $field_id = $form['#info']["filter-$field"]['value'];
       if (!isset($form[$field_id]['#options'])) continue;
 
-      // If using selective filters, filter the value_options based on view results
+      // If using frobv filters, filter the value_options based on view results
       if ($filter->options['expose']['views_frobv'] && isset($filter->options['expose']['views_frobv_viewfield'])) {
         // Get view, display and field
         list($viewname, $display_id, $field_alias) = explode(':', $filter->options['expose']['views_frobv_viewfield']);
