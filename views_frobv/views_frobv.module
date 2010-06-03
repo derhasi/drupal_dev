@@ -183,7 +183,7 @@ function _views_frobv_preserve_for_hierarchy($options, $keys, $preserve_levels) 
   if ($preserve_levels != 0) {
     $flatten = _views_frobv_flatten_options($options);
 
-    $level = 0;
+
     // Levels of parents, that are automatically added on parent preservation.
     $preserved_parents = array();
     // Levels the items are automatically added, due to child preservation
@@ -205,7 +205,7 @@ function _views_frobv_preserve_for_hierarchy($options, $keys, $preserve_levels) 
       if ($preserve_levels < 0) {
         // Not stepped up
         if ($this_level <= $last_level) {
-        // Some former parents are not parents for this one anymore.
+          // Some former parents are not parents for this one anymore.
           foreach ($preserved_parents as $l => $parents) {
             if ($l >= $this_level) {
               unset($preserved_parents[$l]);
@@ -222,8 +222,9 @@ function _views_frobv_preserve_for_hierarchy($options, $keys, $preserve_levels) 
         if (in_array($id, $keys)) {
           // Set parents as additional keys, that are defined levels beneath.
           foreach ($preserved_parents as $l => $parents) {
-            if ($this_level - $preserve_levels > $l) {
-              $additional_keys += $parents; // merge arrays
+            // only parents that are within the tolerance
+            if ($l >= $preserve_levels + $this_level) {
+              $additional_keys = array_merge($additional_keys, $parents);
               unset($preserved_parents[$l]);
             }
           }
