@@ -31,25 +31,41 @@ function views_frobv_form_views_exposed_form_alter(&$form, $form_state) {
       if (!isset($form[$field_id]['#options'])) continue;
 
       // If using selective filters, filter the value_options based on view results
-      if ($filter->options['expose']['views_frobv']) {
+      if ($filter->options['expose']['views_frobv'] && isset($filter->options['expose']['views_frobv_viewfield'])) {
+        // Get view, display and field
+        list($viewname, $display_id, $field_alias) = explode(':', $filter->options['expose']['views_frobv_viewfield']);
 
-        static $results = NULL;
-        static $query_fields = NULL;
+        $pass_arguments = ($filter->options['expose']['views_frobv_pass_arguments']);
+        $pass_exposed = ($filter->options['expose']['views_frobv_pass_exposed']);
 
-        if (empty($results[$field_id])) {
+        $view = views_get_view($viewname);
 
-          dpm($filter);
-
-
+        // Pass arguments to options view
+        if ($pass_arguments) {
+          $args = (isset($filter->view->args)) ? $filter->view->args : array();
+          $view->set_arguments($args);
         }
-        if (!empty($results[$resultset])) {
+
+        // Do not $_GET get passed as exposed filters values.
+        if (!$pass_exposed) {
+          $view->set_exposed_input(array('dummy' => TRUE));
+        }
+
+        // Set correct display
+        $view->set_display($display_id);
+
+        // Execute
+        $view->pre_execute();
+        $view->execute();
+
+        if (!empty($view->result)) {
           if (!isset($field_alias)) {
             // Do nothing.
           }
           else {
             $options = array();
             $null_option_exists = FALSE;
-            foreach ($results[$resultset] as $row) {
+            foreach ($view->result as $row) {
               if (isset($row->$field_alias)) {
                 $options[$row->$field_alias] = TRUE;
               }
@@ -134,7 +150,7 @@ function views_frobv_form_views_ui_config_item_form_alter(&$form, $form_state) {
 
   $right['views_frobv_viewfield'] = array(
     '#type' => 'select',
-    '#title' => t('View field to restrict values to'),
+    '#title' => t('View and field to restrict values to'),
     '#default_value' => @$form_state['handler']->options['expose']['views_frobv_viewfield'],
     '#description' => 'descr',
     '#options' => _views_frobv_view_get_options(),
