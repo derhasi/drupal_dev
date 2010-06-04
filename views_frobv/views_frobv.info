@@ -1,6 +1,6 @@
 ; $Id$
 name = Views Filters Reduce Options by View
-description = Adds ability to reduce the options of a view exposed filter, via fetching data from another view.
+description = "Adds ability to reduce the options of a view exposed filter via fetching data from another view."
 package = Views
 dependencies[] = views
 core = 6.x

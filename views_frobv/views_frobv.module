@@ -64,17 +64,14 @@ function views_frobv_form_views_exposed_form_alter(&$form, $form_state) {
         $view->execute();
 
         if (!empty($view->result)) {
-          if (!isset($field_alias)) {
-            // Do nothing.
-          }
-          else {
+          if (isset($field_alias)) {
             $options = array();
             $null_option_exists = FALSE;
             foreach ($view->result as $row) {
               if (isset($row->$field_alias)) {
                 $options[$row->$field_alias] = TRUE;
               }
-              else if (is_null($row->$field_alias)) {
+              elseif (is_null($row->$field_alias)) {
                 $null_option_exists = TRUE;
               }
             }
@@ -113,7 +110,7 @@ function _views_frobv_reduce_options($options, $keys, $preserve_hierarchy = FALS
 
   $return_options = array();
 
-  // Get additional keys to preserve
+  // Get additional keys to preserve hierarchy.
   if ($preserve_hierarchy) {
     $keys = _views_frobv_preserve_for_hierarchy($options, $keys, $preserve_hierarchy);
   }
@@ -125,7 +122,7 @@ function _views_frobv_reduce_options($options, $keys, $preserve_hierarchy = FALS
       if (!empty($return)) $return_options[$id] = $result;
     }
     // is an object, and could contain multiple items
-    else if (is_object($option)) {
+    elseif (is_object($option)) {
       $result = _views_frobv_reduce_options($option->option, $keys);
       if (!empty($result)) {
         $option->option = $result;
@@ -146,9 +143,7 @@ function _views_frobv_reduce_options($options, $keys, $preserve_hierarchy = FALS
  * Helper function to flatten option array.
  */
 function _views_frobv_flatten_options($options) {
-
   $flatten = array();
-
   foreach ($options as $id => $option) {
     // option is an optgroup, so check the optgroup children
     if (is_array($option)) {
@@ -159,7 +154,7 @@ function _views_frobv_flatten_options($options) {
       }
     }
     // is an object, and could contain multiple items
-    else if (is_object($option)) {
+    elseif (is_object($option)) {
       $result = _views_frobv_flatten_options($option->option);
       // no array_merge, need to preserve keys
       foreach ($result as $i => $res) {
@@ -196,10 +191,12 @@ function _views_frobv_preserve_for_hierarchy($options, $keys, $preserve_levels) 
 
     // Run each option
     foreach ($flatten as $id => $caption) {
-      if ($id == 'All') continue;
-      // hierarchy level of this option
+      if ($id == 'All') {
+        continue;
+      }
+      // Get hierarchy level of this option.
       // Indicator for hierarchy is '-'.
-      $this_level = strlen($caption) - strlen(ltrim($caption, '-'));
+      $this_level = drupal_strlen($caption) - drupal_strlen(ltrim($caption, '-'));
 
       // preserve parents
       if ($preserve_levels < 0) {
@@ -249,10 +246,7 @@ function _views_frobv_preserve_for_hierarchy($options, $keys, $preserve_levels) 
         elseif (count($last_found_levels) && max($last_found_levels) + $preserve_levels >= $this_level) {
           $additional_keys[] = $id;
         }
-        // stepped up and not in tolerance
-        else {
-          // last found levels are still valid
-        }
+        // Else stepped up and not in tolerance, last found levels are still valid.
       }
 
       // Set this level to next one's last level.
@@ -260,7 +254,6 @@ function _views_frobv_preserve_for_hierarchy($options, $keys, $preserve_levels) 
       $last_id = $id;
     }
     $keys = array_merge($keys, $additional_keys);
-
   }
 
   return $keys;
@@ -271,7 +264,9 @@ function _views_frobv_preserve_for_hierarchy($options, $keys, $preserve_levels) 
  * Implementation of hook_form_FORMID_alter() for views_ui_config_item_form.
  */
 function views_frobv_form_views_ui_config_item_form_alter(&$form, $form_state) {
-  if (empty($form['options']['expose'])) return;
+  if (empty($form['options']['expose'])) {
+    return ;
+  }
 
   // Is this a field we can override?
   $overrideable = array('select', 'checkboxes', 'radios');
@@ -323,17 +318,17 @@ function views_frobv_form_views_ui_config_item_form_alter(&$form, $form_state) {
     ),
   );
 
-  $options = drupal_map_assoc(range(-10,10));
+  $options = drupal_map_assoc(range(-10, 10));
   $options[0] = t('Disabled');
   $right['views_frobv_preserve_hierarchy'] = array(
     '#type' => 'select',
     '#title' => t('Preserve hierarchy'),
     '#default_value' => (int) @$form_state['handler']->options['expose']['views_frobv_preserve_hierarchy'],
     '#options' => $options,
-    '#description' => t('Select the level parent or children entries are preserved in a hierarchical select.
-                        So these items will be present, if they are not in the result set of the given view.
-                        Level < 0 preserves levels of parents, level > 0 preserves levels of children.
-                        Hierarchy levels are indicated through a \'-\'.'),
+    '#description' => t('Select the level parent or children entries are preserved in a hierarchical select.'
+                        .' So these items will be present, if they are not in the result set of the given view.'
+                        .' Level < 0 preserves levels of parents, level > 0 preserves levels of children.'
+                        .' Hierarchy levels are indicated through a \'-\'.'),
     '#process' => array('views_process_dependency'),
     '#dependency' => array(
       'edit-options-expose-views-frobv' => array(1),
@@ -358,7 +353,6 @@ function _views_frobv_view_get_options() {
     if (!$view->disabled) {
       $options_view = array();
       foreach ($view->display as $display_id => $display) {
-
         // Return default display, for non overriden fields
         if (!isset($display->display_options['fields'])) {
           $display = $view->display;
