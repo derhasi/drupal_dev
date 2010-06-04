@@ -325,16 +325,12 @@ function views_frobv_form_views_ui_config_item_form_alter(&$form, $form_state) {
     '#title' => t('Preserve hierarchy'),
     '#default_value' => (int) @$form_state['handler']->options['expose']['views_frobv_preserve_hierarchy'],
     '#options' => $options,
-    '#description' => t('Select the level parent or children entries are preserved in a hierarchical select.'
-                        .' So these items will be present, if they are not in the result set of the given view.'
-                        .' Level < 0 preserves levels of parents, level > 0 preserves levels of children.'
-                        .' Hierarchy levels are indicated through a \'-\'.'),
+    '#description' => t("Select the level parent or children entries are preserved in a hierarchical select. So these items will be present, if they are not in the result set of the given view. Level < 0 preserves levels of parents, level > 0 preserves levels of children. Hierarchy levels are indicated through a '-'."),
     '#process' => array('views_process_dependency'),
     '#dependency' => array(
       'edit-options-expose-views-frobv' => array(1),
     ),
   );
-
 
   $expose = $form['options']['expose'];
   $first_chunk = array_splice($expose, 0, array_search('end_checkboxes', array_keys($expose)));
