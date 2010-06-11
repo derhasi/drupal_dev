@@ -1,3 +1,55 @@
 <?php
 
-?>
+/**
+ * @file
+ *  Install, uninstall and update uc_checkout_nodepanes.
+ *
+ *  Provides database for storing order->node relations.
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function uc_checkout_nodepanes_install() {
+  drupal_install_schema('uc_checkout_nodepanes');
+}
+
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function uc_checkout_nodepanes_uninstall() {
+  drupal_uninstall_schema('uc_checkout_nodepanes');
+}
+
+/**
+ * Implemenation of hook_schema().
+ */
+function uc_checkout_nodepanes_schema() {
+   $schema['uc_checkout_nodepanes'] = array(
+    'description' => 'Stores the relationship of orders to nodes.',
+    'fields' => array(
+      'order_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Primary Key: The {uc_orders}.order_id of the ubercart order.',
+      ),
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Primary Key: The {node}.nid of the node assigned to the order.',
+      ),
+    ),
+    'indexes' => array(
+      'order_id' => array('order_id'),
+      'nid' => array('nid'),
+    ),
+    'primary key' => array('order_id', 'nid'),
+  );
+  return $schema;
+
+}
