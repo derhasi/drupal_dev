@@ -1,0 +1,161 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ *  provides node form panes for checkout in ubercart
+ *
+ */
+
+/**
+ * Implemenatation of hook_checkout_pane().
+ */
+function uc_checkout_nodepanes_checkout_pane() {
+  $panes[] = array(
+    'id' => 'nodepane',
+    'callback' => '_uc_checkout_nodepane',
+    'title' => t('Node Pane'),
+    'desc' => t("Display an additional node form, to get associated with the order."),
+    'weight' => 3,
+    'collapsible' => TRUE,
+  );
+  return $panes;
+}
+
+/**
+ * Implementation of hook_form_alter().
+ *
+ * Add additional validation and submission callbacks.
+ */
+function uc_checkout_nodepanes_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'uc_cart_checkout_form') {
+    $form['#validate'][] = 'uc_checkout_nodepanes_checkout_form_validate';
+    $form['#submit'][] = 'uc_checkout_nodepanes_checkout_form_submit';
+  }
+}
+
+/**
+ * Node pane checkout pane callback.
+ */
+function _uc_checkout_nodepane($op, &$arg1, $arg2 = NULL) {
+
+  switch ($op) {
+    case 'view':
+      // Load node type form.
+      $node_form = _uc_checkout_nodepanes_node_form();
+
+      return array(
+        'description' => 'descr',
+        'contents' => array('node_form' => $node_form),
+      );
+    case 'review':
+      return 'Hello';
+    case 'process':
+      dpm($arg1, 'arg1');
+      dpm($arg2, 'arg2');
+      break;
+  }
+}
+
+/**
+ * Helper function to get node form.
+ */
+function _uc_checkout_nodepanes_node_form() {
+  GLOBAl $user;
+  $type = 'page';
+  $types = node_get_types();
+  $type = isset($type) ? str_replace('-', '_', $type) : NULL;
+  // If a node type has been specified, validate its existence.
+  if (isset($types[$type]) && node_access('create', $type)) {
+    // Initialize settings:
+    $node = array('uid' => $user->uid, 'name' => (isset($user->name) ? $user->name : ''), 'type' => $type, 'language' => '');
+    $form_state = array();
+    // node_form() must be available.
+    module_load_include('inc', 'node', 'node.pages');
+    $node_form = drupal_retrieve_form($type. '_node_form', $form_state, $node);
+
+    // Retrieve validation callbacks
+    $validates = array();
+    if (isset($node_form['buttons']['submit']['#validate'])) {
+      $validates = array_merge($validates, $node_form['buttons']['submit']['#validate']);
+    }
+    if (isset($node_form['#validate'])) {
+      $validates = array_merge($validates, $node_form['#validate']);
+    }
+    $node_form['#nodepane_validates'] = $validates;
+
+    // Retrieve submit callbacks
+    $submits = array();
+    if (isset($node_form['buttons']['submit']['#submit'])) {
+      $submits = array_merge($submits , $node_form['buttons']['submit']['#submit']);
+    }
+    if (isset($node_form['#submit'])) {
+      $submits  = array_merge($submits , $node_form['#submit']);
+    }
+    $node_form['#nodepane_submits'] = $submits;
+
+    // Remove buttons
+    unset($node_form['buttons']);
+
+
+    return $node_form;
+  }
+  return FALSE;
+}
+
+
+/**
+ * Additional validation function to process node form's validation.
+ */
+function uc_checkout_nodepanes_checkout_form_validate($form, &$form_state) {
+
+  // Process the node form only.
+  $node_form_state = $form_state;
+  $node_form_state['values'] = $form_state['values']['panes']['nodepane']['node_form'];
+  $node_form = $form['panes']['nodepane']['node_form'];
+  $validates = $form['panes']['nodepane']['#nodepane_validates'];
+
+  // Run each validation with only node form.
+  if ($validates && is_array($validates)) {
+    foreach ($validates as $validate) {
+      if (function_exists($validate)) {
+        $validate($node_form, $node_form_state);
+      }
+    }
+  }
+
+  // Put back eventually changed values.
+  $form_state['values']['panes']['nodepane']['node_form'] = $node_form_state['values'];
+
+  dpm($form, 'VFORM');
+  dpm($form_state, 'VFS');
+}
+
+/**
+ * Additional submission function to process node_form's submisions.
+ */
+function uc_checkout_nodepanes_checkout_form_submit($form, &$form_state) {
+
+  // Process the node form only.
+  $node_form_state = $form_state;
+  $node_form_state['values'] = $form_state['values']['panes']['nodepane']['node_form'];
+  $node_form = $form['panes']['nodepane']['node_form'];
+  $submits = $form['panes']['nodepane']['#nodepane_submits'];
+
+  // Run each submit with only node form.
+  if ($validates && is_array($validates)) {
+    foreach ($validates as $validate) {
+      if (function_exists($validate)) {
+        $validate($node_form, $node_form_state);
+      }
+    }
+  }
+
+  // Put back eventually changed values.
+  $form_state['values']['panes']['nodepane']['node_form'] = $node_form_state['values'];
+
+  // Store order -> node relation.
+
+  dpm($form, 'SFORM');
+  dpm($form_state, 'SFS');
+}
