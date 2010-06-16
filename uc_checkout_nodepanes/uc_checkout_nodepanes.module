@@ -41,7 +41,6 @@ function _uc_checkout_nodepane($op, &$arg1, $arg2 = NULL) {
 
   switch ($op) {
     case 'view':
-      $order_id = $arg1->order_id;
       // Load pane form.
       $contents = _uc_checkout_nodepanes_nodepane_contents($arg1, $arg2);
       return array(
@@ -63,6 +62,7 @@ function _uc_checkout_nodepane($op, &$arg1, $arg2 = NULL) {
 
       return FALSE;
     case 'process':
+      dpm(func_get_args());
       // node and relation to order_id is saved in
       // uc_checkout_nodepanes_checkout_form_submit().
       break;
@@ -77,6 +77,8 @@ function _uc_checkout_nodepanes_nodepane_contents(&$arg1, $arg2 = NULL) {
 
   $order_id = $arg1->order_id;
   $node = uc_checkout_nodepanes_get_node_for_order($order_id);
+
+  dpm($arg1, 'arg1');
 
   // Check if node is present
   if (!$node) {
@@ -96,15 +98,25 @@ function _uc_checkout_nodepanes_nodepane_contents(&$arg1, $arg2 = NULL) {
     }
     return FALSE;
   }
+  else {
+    $type = str_replace('-', '_', $node->type);
+  }
 
 
   // If a node type has been specified, validate its existence.
   if ($node) {
     // Initialize settings:
-    $form_state = array();
+    $form_state = array(
+      'want form' => TRUE,
+      'args' => array($node),
+    );
     // node_form() must be available.
     module_load_include('inc', 'node', 'node.pages');
-    $node_form = drupal_retrieve_form($type. '_node_form', $form_state, $node);
+    //$node_form = drupal_retrieve_form($type .'_node_form', $form_state, $node);
+    ctools_include('form');
+    $node_form = ctools_build_form($type .'_node_form', $form_state);
+
+    dpm($node_form);
 
     // Retrieve validation callbacks
     $validates = array();
@@ -189,6 +201,8 @@ function uc_checkout_nodepanes_checkout_form_submit($form, &$form_state) {
   // Store order -> node relation.
   $order_id = $form_state['values']['panes']['nodepane']['order_id'];
   $nid = $node_form_state['nid'];
+
+  dpm(func_get_args());
   if ($order_id && $nid) {
     uc_checkout_nodepanes_set_node_for_order($order_id, $nid);
   }
