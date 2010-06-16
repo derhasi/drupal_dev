@@ -1,6 +1,0 @@
-; $Id$
-name = Ubercart - Checkout Node Panes
-description = Checkout panes for Ubercart that are node type forms.
-dependencies[] = uc_cart
-package = "Ubercart - extra"
-core = 6.x
