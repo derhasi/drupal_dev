@@ -1,0 +1,202 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ *   Additional field types for uc_extra_fields_pane.
+ */
+
+/**
+ * Implementation of hook_form_FORM_ID_alter().
+ */
+function uc_extra_fields_pane_plus_form_uc_cart_checkout_form_alter(&$form, &$form_state) {
+  $panes = array('extra_billing' => '_billing', 'extra_delivery' => '_delivery');
+
+  // Run defined panes
+  foreach ($panes as $pane => $suffix) {
+    if (isset($form['panes'][$pane])) {
+      $fields = uc_extra_fields_pane_load_fields_from_db();
+
+      // Run each field
+      foreach ($fields as $field) {
+        $plus = variable_get('uc_extra_fields_pane_plus_'. $field['id'], FALSE);
+
+        if (is_array($plus) && $plus['type'] && $plus['type'] != 'default') {
+          $fieldid = $field['field'] . $suffix;
+          switch ($plus['type']) {
+            case 'textarea':
+              $form['panes'][$pane]['extra_fields'][$fieldid]['#type'] = 'textarea';
+              $form['panes'][$pane]['extra_fields'][$fieldid]['#rows'] = $plus['rows'];
+              break;
+            case 'select':
+              $form['panes'][$pane]['extra_fields'][$fieldid]['#type'] = 'select';
+              $options = _uc_extra_fields_pane_plus_retrieve_options_array($plus['options'], $plus['optional']);
+              $form['panes'][$pane]['extra_fields'][$fieldid]['#options'] = $options;
+              if (!isset($form['panes'][$pane]['extra_fields'][$fieldid]['#default_value'])) {
+                $form['panes'][$pane]['extra_fields'][$fieldid]['#default_value'] = $plus['default'];
+              }
+              unset($form['panes'][$pane]['extra_fields'][$fieldid]['#size']);
+              break;
+            case 'radios':
+              $form['panes'][$pane]['extra_fields'][$fieldid]['#type'] = 'radios';
+              $options = _uc_extra_fields_pane_plus_retrieve_options_array($plus['options'], $plus['optional']);
+              $form['panes'][$pane]['extra_fields'][$fieldid]['#options'] = $options;
+              if (!isset($form['panes'][$pane]['extra_fields'][$fieldid]['#default_value'])) {
+                $form['panes'][$pane]['extra_fields'][$fieldid]['#default_value'] = $plus['default'];
+              }
+              break;
+            case 'checkbox':
+              $form['panes'][$pane]['extra_fields'][$fieldid]['#type'] = 'checkbox';
+              $form['panes'][$pane]['extra_fields'][$fieldid]['#return_value'] = $plus['return_value'];
+              break;
+          }
+        }
+      }
+    }
+  }
+
+}
+
+/**
+ * Implementation of hook_form_FORM_ID_alter().
+ */
+function uc_extra_fields_pane_plus_form_uc_extra_fields_pane_field_edit_alter(&$form, &$form_state) {
+  $form['submit']['#weight'] = 50;
+
+  // path is admin/store/settings/extrafields/*/edit
+  $fid = arg(4);
+
+  // Load specs from {variables}.
+  $specs = variable_get('uc_extra_fields_pane_plus_'. $fid, array());
+
+  $form['plus'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Plus'),
+    '#tree' => TRUE,
+  );
+
+  // Add dependency expand via ctools dependent plugin.
+  //if (module_exists('ctools')) {
+    ctools_include('dependent');
+  //}
+
+  // Store fid for internal usage
+  $form['plus']['fid'] = array(
+    '#value' => $fid,
+    '#type' => 'value',
+  );
+  $form['plus']['type'] = array(
+    '#title' => t('Type'),
+    '#type' => 'select',
+    '#options' => array(
+      'default' => t('Default (Textfield)'),
+      'textarea' => t('Textarea'),
+      'checkbox' => t('Single Checkbox'),
+      'select' => t('Select / Dropdown'),
+      'radios' => t('Radios'),
+    ),
+    '#default_value' => $specs['type'],
+  );
+
+  // Options for select and radios
+  $form['plus']['options'] = array(
+    '#title' => t('Options'),
+    '#type' => 'textarea',
+    '#default_value' => $specs['options'],
+    '#description' => t('Enter one value per line. Value will be both, key and value. Pipe symbols will not seperate keys from value.'),
+    '#dependency' => array('edit-plus-type' => array('select','radios')),
+    '#process' => array('ctools_dependent_process'),
+  );
+  $form['plus']['default'] = array(
+    '#title' => t('Default'),
+    '#type' => 'textfield',
+    '#default_value' => $specs['default'],
+    '#description' => t('Default value for select and checkboxes values.'),
+    '#dependency' => array('edit-plus-type' => array('select','radios')),
+    '#process' => array('ctools_dependent_process'),
+  );
+
+  // Option for textarea
+  $form['plus']['rows'] = array(
+    '#title' => t('Rows'),
+    '#type' => 'select',
+    '#description' => t('Select number of rows for input. Length will be restricted to 255 characters.'),
+    '#options' => drupal_map_assoc(range(1, 20)),
+    '#default_value' => ($specs['rows']) ? $specs['rows'] : 5,
+    '#dependency' => array('edit-plus-type' => array('textarea')),
+    '#process' => array('ctools_dependent_process'),
+  );
+
+  // Option for checkbox
+  $form['plus']['return_value'] = array(
+    '#title' => t('Return value'),
+    '#type' => 'textfield',
+    '#description' => t('Show this value, when checkbox is checked.'),
+    '#default_value' => $specs['return_value'],
+    '#dependency' => array('edit-plus-type' => array('checkbox')),
+    '#process' => array('ctools_dependent_process'),
+  );
+
+  // Additional validation
+  $form['#validate'][] = 'uc_extra_fields_pane_plus_field_edit_alter_validate';
+  // Additional submission callback to store settings.
+  $form['#submit'][] = 'uc_extra_fields_pane_plus_field_edit_alter_submit';
+}
+
+/**
+ * Additional validation for settings form.
+ */
+function uc_extra_fields_pane_plus_field_edit_alter_validate($form, &$form_state) {
+  $plus = $form_state['values']['plus'];
+  switch ($plus['type']) {
+    case 'checkbox':
+      if (!$plus['return_value']) {
+        form_set_error('plus][return_value', 'Checkbox needs a value to be assigned to!');
+      }
+      break;
+    case 'textarea':
+      break;
+    case 'select':
+    case 'radios':
+      $list = _uc_extra_fields_pane_plus_retrieve_options_array($plus['options']);
+      //$default = (isset($plus['default'])) ? filter_xss($plus['default']) : 0;
+      if (!count($list)) {
+        form_set_error('plus][options', 'There has to be at least one valid/non-empty option!');
+      }
+      // Default value has to be there.
+      elseif (($form_state['values']['required'] || $plus['default']) && !in_array($default, $list)) {
+        form_set_error('plus][default', 'Default value must be in options!');
+      }
+      break;
+  }
+}
+
+/**
+ * Additional submission for settings form.
+ */
+function uc_extra_fields_pane_plus_field_edit_alter_submit($form, &$form_state) {
+  $plus = $form_state['values']['plus'];
+  $fid = $plus['fid'];
+  $plus['optional'] = !$form_state['values']['required'];
+  unset($plus['fid']);
+  variable_set('uc_extra_fields_pane_plus_'. $fid, $plus);
+}
+
+/**
+ * Helper function to convert a text area entry to an options array.
+ */
+function _uc_extra_fields_pane_plus_retrieve_options_array($opttext, $optional = FALSE) {
+  $list = explode("\n", $opttext);
+  $list = array_map('trim', $list);
+  $list = array_filter($list, 'strlen');
+  $return = array();
+
+  if ($optional) {
+    $return[''] = t('<None>');
+  }
+  foreach ($list as $opt) {
+    $opt = filter_xss($opt);
+    $return[$opt] = $opt;
+  }
+  return $return;
+}
