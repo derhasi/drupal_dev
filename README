@@ -1,15 +1,4 @@
-This repository is separated in different development branches:
-that might move to separate repositories.
+This repository is separated in different development branches.
 
-* annotation
-http://github.com/derhasi/Derhasi-Drupal-Modules-dev/tree/annotation
-
-* imagecache
-http://github.com/derhasi/Derhasi-Drupal-Modules-dev/tree/imagecache
-
--------
-
-Former parts of this repository have their own repository now:
-
-* stats
-http://github.com/derhasi/stats
+This branch is for an extension of http://drupal.org/project/uc_extra_fields_pane
+with several more field types.
