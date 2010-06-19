@@ -20,9 +20,8 @@ function uc_extra_fields_pane_plus_form_uc_cart_checkout_form_alter(&$form, &$fo
       // Run each field
       foreach ($fields as $field) {
         $plus = variable_get('uc_extra_fields_pane_plus_'. $field['id'], FALSE);
-
+        $fieldid = $field['field'] . $suffix;
         if (is_array($plus) && $plus['type'] && $plus['type'] != 'default') {
-          $fieldid = $field['field'] . $suffix;
           switch ($plus['type']) {
             case 'textarea':
               $form['panes'][$pane]['extra_fields'][$fieldid]['#type'] = 'textarea';
@@ -51,7 +50,17 @@ function uc_extra_fields_pane_plus_form_uc_cart_checkout_form_alter(&$form, &$fo
               break;
           }
         }
+
+        // Set weight
+        if (is_array($plus)) {
+          $form['panes'][$pane]['extra_fields'][$fieldid]['#weight'] = (int) $plus['weight'];
+        }
       }
+
+      // Do not use uc_extra
+      //unset($form['panes'][$pane]['#theme']);
+      $form['panes'][$pane]['#theme'] = 'uc_extra_fields_pane_plus';
+
     }
   }
 
@@ -85,6 +94,14 @@ function uc_extra_fields_pane_plus_form_uc_extra_fields_pane_field_edit_alter(&$
     '#value' => $fid,
     '#type' => 'value',
   );
+
+  $form['plus']['weight'] = array(
+    '#title' => t('Weight'),
+    '#type' => 'weight',
+    '#default_value' => (int) $specs['weight'],
+    '#delta' => 25,
+  );
+
   $form['plus']['type'] = array(
     '#title' => t('Type'),
     '#type' => 'select',
@@ -199,4 +216,49 @@ function _uc_extra_fields_pane_plus_retrieve_options_array($opttext, $optional =
     $return[$opt] = $opt;
   }
   return $return;
+}
+
+
+/**
+ * Implementation of hook_theme().
+ */
+function uc_extra_fields_pane_plus_theme() {
+  return array(
+    'uc_extra_fields_pane_plus' => array(
+      'arguments' => array('form' => NULL),
+    ),
+  );
+}
+
+/**
+ * Theme function for sorted pane output.
+ *
+ * @ingroup themeable
+ * @see
+ *   theme_uc_extra_fields_pane_plus()
+ */
+function theme_uc_extra_fields_pane_plus($form) {
+  $req = '<span class="form-required">*</span>';
+  $output = '<div class="address-pane-table"><table>';
+
+  // Sort via weight
+  $extra_fields = $form['extra_fields'];
+  uasort($extra_fields, 'element_sort');
+
+  foreach (element_children($extra_fields) as $field) {
+    $title = $form['extra_fields'][$field]['#title'] .':';
+    unset($form['extra_fields'][$field]['#title']);
+    $output .= '<tr><td class="field-label">';
+    if ($form['extra_fields'][$field]['#required']) {
+      $output .= $req;
+    }
+    $output .= $title .'</td><td>'. drupal_render($form['extra_fields'][$field]) .'</td></tr>';
+  }
+  $output .= '</table></div>';
+
+  foreach (element_children($form) as $element) {
+    $output .= drupal_render($form[$element]);
+  }
+
+  return $output;
 }
