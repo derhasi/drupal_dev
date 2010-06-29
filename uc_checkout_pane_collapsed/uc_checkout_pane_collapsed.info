@@ -1,7 +1,0 @@
-; $Id$
-name = Checkout Pane Collapsed
-description = "Set checkout panes to collapse by default."
-dependencies[] = uc_cart
-package = "Ubercart - extra"
-core = 6.x
-php = 5.0

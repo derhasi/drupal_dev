@@ -1,8 +1,0 @@
-; $Id$
-name = Extra Fields Pane Plus
-description = "Additional field types for 'Extra Fields Pane'"
-dependencies[] = uc_extra_fields_pane
-dependencies[] = ctools
-package = "Ubercart - extra"
-core = 6.x
-php = 5.0
