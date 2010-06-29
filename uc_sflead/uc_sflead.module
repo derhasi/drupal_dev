@@ -62,9 +62,9 @@ function uc_sflead_menu() {
 function uc_sflead_order($op, &$order, $new_status) {
   if ($op == 'update' && $new_status != 'in_checkout') {
     $vars = uc_sflead_build_vars($order);
-    //dpm(func_get_args());
+    dpm(func_get_args(), 'func_get_args');
     //dpm($vars);
-    uc_sflead_send($vars, $order->id);
+    uc_sflead_send($vars, $order->order_id);
   }
 }
 

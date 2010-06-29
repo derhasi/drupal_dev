@@ -137,14 +137,14 @@ function _uc_sflead_mapping_form_helper(&$form, $mapping) {
   // Mapping type
   $form['mapping_type'] = array(
     '#type' => 'select',
-    '#title' => t('Select'),
+    '#title' => t('Mapping type'),
     '#default_value' => (!$mapping) ? FALSE : $mapping->mapping_type,
     '#required' => TRUE,
     '#options' => array(
       'fixed' => t('Fixed value'),
       'variable' => t('Variable value'),
     ),
-    // @TODO: advanced help integration
+    '#description' => t('See help box below for more information on the different mapping types.'),
   );
   if (module_exists('token')) {
     $form['mapping_type']['#options']['token'] = t('Token');
@@ -160,6 +160,54 @@ function _uc_sflead_mapping_form_helper(&$form, $mapping) {
   $form['#validate'] = array(
     'uc_sflead_settings_mapping_validate',
   );
+
+  // Help text is showing dependent on selection.
+  if (module_exists('ctools')) {
+    ctools_include('dependent');
+  }
+
+  $form['help'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Help'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['help']['fixed'] = array(
+    '#input' => TRUE,
+    '#type' => 'item',
+    '#title' => t('Help for %selection', array('%selection' => t('Fixed value'))),
+    '#value' => t('The given value will be passed to salesforce without modifications.'),
+    '#dependency' => array('edit-mapping-type' => array('fixed')),
+    '#process' => array('ctools_dependent_process'),
+  );
+
+  $form['help']['variable'] = array(
+    '#input' => TRUE,
+    '#type' => 'item',
+    '#title' => t('Help for %selection', array('%selection' => t('Variable value'))),
+    '#value' => t('The value is an indicator for the value in the $order object. Levels of object and array are separated by "!arraysep".'.
+                  '<br> Examples:'.
+                  '<ul><li>$order->billing_first_name : <code>billing_first_name</code></li>'.
+                  "<li>\$order->data['profile']['profile_xy'] : <code>data!ARRSEPprofile!ARRSEPprofile_xy</code></li>".
+                  "<li>\$order->data['extra_fields']['ucxf_1_billing'] : <code>data!ARRSEPextra_fields!ARRSEPucxf_1_billing</code></li></ul>.",
+                  array('!ARRSEP' => UC_SFLEAD_SEPARATOR_ARRAY)),
+    '#dependency' => array('edit-mapping-type' => array('variable')),
+    '#process' => array('ctools_dependent_process'),
+  );
+
+  $form['help']['token'] = array(
+    '#input' => TRUE,
+    '#type' => 'item',
+    '#title' => t('Help for %selection', array('%selection' => t('Token'))),
+    '#value' => t('The given value will be replaced with global and order tokens. !token has to be enabled. !token_replacement',
+                  array(
+                    '!token' => l('Token', 'http://drupal.org/project/token'),
+                    '!token_replacement' => theme('token_help', array('global', 'order')),
+                  )),
+    '#dependency' => array('edit-mapping-type' => array('token')),
+    '#process' => array('ctools_dependent_process'),
+  );
+
   $form['submit'] = array(
     '#type' => 'submit',
     '#submit' => array('uc_sflead_settings_mapping_submit'),
@@ -168,6 +216,8 @@ function _uc_sflead_mapping_form_helper(&$form, $mapping) {
   $form['cancel'] = array(
     '#value' => l(t('Cancel'), 'admin/store/settings/checkout/edit/sflead'),
   );
+
+
 }
 
 /**
