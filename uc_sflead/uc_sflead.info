@@ -1,0 +1,7 @@
+; $Id$
+name = Ubercart Salesforce Lead
+description = "Simple lead form submission to salesforce. Works with uc_profile and uc_extra_fields_pane"
+dependencies[] = uc_order
+package = "Ubercart - extra"
+core = 6.x
+php = 5.0

@@ -1,0 +1,231 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ *  Simple lead form submission to salesforce, for ubercart orders.
+ */
+
+/**
+ * Define special form seperators for variable mapping.
+ */
+define('UC_SFLEAD_SEPARATOR_ARRAY', '|');
+// define('UC_SFLEAD_SEPARATOR_MULTIPLE', ',');
+
+
+/**
+ * Implementation of hook_menu().
+ */
+function uc_sflead_menu() {
+  $items['admin/store/settings/checkout/edit/sflead'] = array(
+    'title' => 'Salesforce Lead',
+    'description' => 'Simple lead form submission.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_sflead_settings_form'),
+    'file' => 'uc_sflead.admin.inc',
+    'access arguments' => array('administer store'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 10,
+  );
+  $items['admin/store/settings/checkout/edit/sflead/add'] = array(
+    'title' => 'Add new mapping',
+    'description' => 'Add a new field mapping association.',
+    'page arguments' => array('uc_sflead_settings_add_mapping'),
+    'file' => 'uc_sflead.admin.inc',
+    'access arguments' => array('administer store'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/store/settings/checkout/edit/sflead/%uc_sflead_mapping'] = array(
+    'title' => 'Modify field',
+    'description' => 'Edit extra address field.',
+    'page arguments' => array('uc_sflead_settings_edit_mapping', 6),
+    'file' => 'uc_sflead.admin.inc',
+    'access arguments' => array('administer store'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/store/settings/checkout/edit/sflead_delete/%uc_sflead_mapping'] = array(
+    'title' => 'Delete mapping',
+    'description' => 'Delete a sflead mapping.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_sflead_mapping_delete_confirm', 6),
+    'file' => 'uc_sflead.admin.inc',
+    'access arguments' => array('administer store'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_order().
+ */
+function uc_sflead_order($op, &$order, $new_status) {
+  if ($op == 'update' && $new_status != 'in_checkout') {
+    $vars = uc_sflead_build_vars($order);
+    //dpm(func_get_args());
+    //dpm($vars);
+    uc_sflead_send($vars, $order->id);
+  }
+}
+
+/**
+ * Loading function for single mapping.
+ *
+ * Needed for settings edit page callback.
+ */
+function uc_sflead_mapping_load($arg) {
+  return uc_sflead_mapping_info('raw', $arg);
+}
+
+/**
+ * Get mapping information.
+ * @param $type
+ *  (optional) either 'fixed','variable', 'token' or 'raw'
+ *  special type 'raw' returns an unnested array with 'key' => database return values.
+ * @param $key
+ *  (optional) the sfkey to get value or definition for.
+ * @param $reload
+ *  reload the settings from database
+ *
+ * @return
+ *  - 'raw' array of all keys and its database line objects.
+ *  - array of mapping values, grouped by typem keyed by sfkey
+ *  - array of mapping values of a specified type, keyed by sfkey
+ *  - single mapping value for speficied type and sfkey
+ *  - mapping object (sfkey, mapping_type, value) for a specified sfkey
+ */
+function uc_sflead_mapping_info($type = NULL, $key = NULL, $reload = FALSE) {
+  static $info = array();
+  static $info_raw = array();
+
+  if ($reload || empty($info)) {
+    $info = array();
+    $query = "SELECT * FROM {uc_sflead_mapping}";
+    $ret = db_query($query);
+    while ($obj = db_fetch_object($ret)) {
+      $info_raw[$obj->sfkey] = $obj;
+      $info[$obj->mapping_type][$obj->sfkey] = $obj->value;
+    }
+  }
+
+  // Different modes of returns.
+  if ($type == 'raw') {
+    // Return unnested raw output for all or single item.
+    if (isset($key)) {
+      return $info_raw[$key];
+    }
+    else {
+      return ($info_raw) ? $info_raw : array();
+    }
+  }
+  if (isset($type) && isset($key)) {
+    return $info[$type][$key];
+  }
+  elseif (isset($type)) {
+    return ($info[$type]) ? $info[$type] : array();
+  }
+  elseif (isset($key)) {
+    return $info_raw[$sfkey];
+  }
+  return $info;
+}
+
+/**
+ * Prepares vars of an order to be sent to salesforce.
+ *
+ * @param $order
+ *   order object as passed to hook_order('update', ...)
+ */
+function uc_sflead_build_vars($order) {
+  // Load mapping callbacks.
+  module_load_include('inc', 'uc_sflead', 'uc_sflead.mapping');
+  $prefix = '_uc_sflead_mapping_callback_';
+
+  $vars = array();
+  $info = uc_sflead_mapping_info('raw');
+
+  foreach ($info as $key => $item) {
+    $function = $prefix . $item->mapping_type;
+    if (function_exists($function)) {
+      $vars[$key] = $function($item, $order);
+    }
+  }
+  return $vars;
+}
+
+
+/**
+ * Send prepared variables to salesforce.
+ */
+function uc_sflead_send($vars, $order_id = 0) {
+
+  // Basic request parameters.
+  $url = 'https://www.salesforce.com/servlet/servlet.WebToLead?encoding=UTF-8';
+  $method = 'POST';
+  $headers = array(
+    'Content-type' => 'text/html; charset=UTF-8',
+  );
+  // Additional values
+  $vars['oid'] = '00D20000000N5gA';
+  $vars['retURL'] = 'http://';
+  // Debugging
+  $vars['debug'] = 1;
+  $vars['debugEmail'] = 'derhaside@gmail.com';
+  // Flatten variables for http request. @see http://drupal.org/node/305498
+  $data = http_build_query($vars, '', '&');
+
+  // Request - tries up to 3 times, @see drupal_http_request().
+  $ret = drupal_http_request($url, $headers, $method, $data);
+  dpm($ret);
+
+  // Pass logging information to watchdog and return boolean success indicator.
+  $link = l(t('Order #@order', array('@order' => $order_id)), 'admin/store/orders/'. $order_id);
+  if ($ret != 200) {
+    watchdog('uc_sflead', 'Salesforce request for order #@order failed with request code "@code"!', array('@order' => $order_id, '@code' => $ret->code), $link);
+    return FALSE;
+  }
+  else {
+    watchdog('uc_sflead', 'Succesfully sent salesforce request for Order #@order.', array('@order' => $order_id), $link);
+    return TRUE;
+  }
+}
+
+/**
+ * Helper functions contains overall required settings.
+ */
+function _uc_sflead_mapping_settings() {
+  return array(
+    'oid' => NULL,
+    'retURL' => NULL,
+  );
+}
+
+/**
+ * Checks if the key allready exists or is not allowed to be assigned at all.
+ *
+ * @param $sfkey
+ * @return
+ *  0 - key does not exist an may be assigned
+ *  1 - key exists
+ *  2 - key may not be assigned
+ */
+function _uc_sflead_mapping_exists($key) {
+  // Required basic settings in overview settings form.
+  $settings_keys = array_keys(_uc_sflead_mapping_settings());
+  if (in_array($key, $settings_keys)) {
+    return 2;
+  }
+  // Look for keys in database.
+  $query = "SELECT sfkey FROM {uc_sflead_mapping} WHERE sfkey = '%s'";
+  return (bool) db_result(db_query($query, $sfkey));
+}
+
+/**
+ * Delete a mapping element via key.
+ * @param $key
+ */
+function uc_sflead_mapping_delete($key) {
+  $query = "DELETE FROM {uc_sflead_mapping} WHERE sfkey = '%s'";
+  db_query($query, $key);
+}
+

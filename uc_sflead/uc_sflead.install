@@ -1,0 +1,54 @@
+<?php
+// $Id$
+
+/**
+ * Install database for mapping storage.
+ */
+
+
+
+/**
+ * Implementation of hook_install().
+ */
+function uc_sflead_install() {
+  return drupal_install_schema('uc_sflead');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function uc_sflead_uninstall() {
+  return drupal_uninstall_schema('uc_sflead');
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function uc_sflead_schema() {
+  $schema['uc_sflead_mapping'] = array(
+    'description' => 'Stores the mapping information for the uc_sflead form.',
+    'fields' => array(
+      'sfkey' => array(
+        'description' => 'The key for the salesforce lead form field.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'mapping_type' => array(
+        'description' => 'Mapping type, either "fixed" or "variable".',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE),
+      'value' => array(
+        'description' => 'The value (type "fixed") or variable specification (type "variable") for the value to sends.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      )
+    ),
+    'primary key' => array('sfkey'),
+  );
+  return $schema;
+}
