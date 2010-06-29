@@ -17,7 +17,7 @@ define('UC_SFLEAD_SEPARATOR_ARRAY', '|');
  * Implementation of hook_menu().
  */
 function uc_sflead_menu() {
-  $items['admin/store/settings/checkout/edit/sflead'] = array(
+  $items['admin/store/settings/orders/edit/sflead'] = array(
     'title' => 'Salesforce Lead',
     'description' => 'Simple lead form submission.',
     'page callback' => 'drupal_get_form',
@@ -27,7 +27,7 @@ function uc_sflead_menu() {
     'type' => MENU_LOCAL_TASK,
     'weight' => 10,
   );
-  $items['admin/store/settings/checkout/edit/sflead/add'] = array(
+  $items['admin/store/settings/orders/edit/sflead/add'] = array(
     'title' => 'Add new mapping',
     'description' => 'Add a new field mapping association.',
     'page arguments' => array('uc_sflead_settings_add_mapping'),
@@ -35,7 +35,7 @@ function uc_sflead_menu() {
     'access arguments' => array('administer store'),
     'type' => MENU_CALLBACK,
   );
-  $items['admin/store/settings/checkout/edit/sflead/%uc_sflead_mapping'] = array(
+  $items['admin/store/settings/orders/edit/sflead/%uc_sflead_mapping'] = array(
     'title' => 'Modify field',
     'description' => 'Edit extra address field.',
     'page arguments' => array('uc_sflead_settings_edit_mapping', 6),
@@ -43,7 +43,7 @@ function uc_sflead_menu() {
     'access arguments' => array('administer store'),
     'type' => MENU_CALLBACK,
   );
-  $items['admin/store/settings/checkout/edit/sflead_delete/%uc_sflead_mapping'] = array(
+  $items['admin/store/settings/orders/edit/sflead_delete/%uc_sflead_mapping'] = array(
     'title' => 'Delete mapping',
     'description' => 'Delete a sflead mapping.',
     'page callback' => 'drupal_get_form',
@@ -62,8 +62,6 @@ function uc_sflead_menu() {
 function uc_sflead_order($op, &$order, $new_status) {
   if ($op == 'update' && $new_status != 'in_checkout') {
     $vars = uc_sflead_build_vars($order);
-    dpm(func_get_args(), 'func_get_args');
-    //dpm($vars);
     uc_sflead_send($vars, $order->order_id);
   }
 }
@@ -176,7 +174,6 @@ function uc_sflead_send($vars, $order_id = 0) {
 
   // Request - tries up to 3 times, @see drupal_http_request().
   $ret = drupal_http_request($url, $headers, $method, $data);
-  dpm($ret);
 
   // Pass logging information to watchdog and return boolean success indicator.
   $link = l(t('Order #@order', array('@order' => $order_id)), 'admin/store/orders/'. $order_id);

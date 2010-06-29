@@ -16,7 +16,7 @@ function uc_sflead_settings_form(&$form_state) {
   );
 
   $form['add'] = array(
-    '#value' => l(t('Add new mapping'), 'admin/store/settings/checkout/edit/sflead/add'),
+    '#value' => l(t('Add new mapping'), 'admin/store/settings/orders/edit/sflead/add'),
   );
 
   // Settings
@@ -66,8 +66,8 @@ function uc_sflead_mapping_overview() {
         check_plain($item->sfkey),
         check_plain($item->mapping_type),
         check_plain($item->value),
-        l(t('edit'), "admin/store/settings/checkout/edit/sflead/$item->sfkey"),
-        l(t('delete'), "admin/store/settings/checkout/edit/sflead_delete/$item->sfkey"),
+        l(t('edit'), "admin/store/settings/orders/edit/sflead/$item->sfkey"),
+        l(t('delete'), "admin/store/settings/orders/edit/sflead_delete/$item->sfkey"),
       );
       $rows[] = $row;
     }
@@ -189,7 +189,7 @@ function _uc_sflead_mapping_form_helper(&$form, $mapping) {
                   '<br> Examples:'.
                   '<ul><li>$order->billing_first_name : <code>billing_first_name</code></li>'.
                   "<li>\$order->data['profile']['profile_xy'] : <code>data!ARRSEPprofile!ARRSEPprofile_xy</code></li>".
-                  "<li>\$order->data['extra_fields']['ucxf_1_billing'] : <code>data!ARRSEPextra_fields!ARRSEPucxf_1_billing</code></li></ul>.",
+                  "<li>\$order->extra_fields['ucxf_1_billing'] : <code>extra_fields!ARRSEPucxf_1_billing</code></li></ul>.",
                   array('!ARRSEP' => UC_SFLEAD_SEPARATOR_ARRAY)),
     '#dependency' => array('edit-mapping-type' => array('variable')),
     '#process' => array('ctools_dependent_process'),
@@ -202,7 +202,7 @@ function _uc_sflead_mapping_form_helper(&$form, $mapping) {
     '#value' => t('The given value will be replaced with global and order tokens. !token has to be enabled. !token_replacement',
                   array(
                     '!token' => l('Token', 'http://drupal.org/project/token'),
-                    '!token_replacement' => theme('token_help', array('global', 'order')),
+                    '!token_replacement' => theme('token_help', array('global', 'order', 'user')),
                   )),
     '#dependency' => array('edit-mapping-type' => array('token')),
     '#process' => array('ctools_dependent_process'),
@@ -214,7 +214,7 @@ function _uc_sflead_mapping_form_helper(&$form, $mapping) {
     '#value' => t('Submit'),
   );
   $form['cancel'] = array(
-    '#value' => l(t('Cancel'), 'admin/store/settings/checkout/edit/sflead'),
+    '#value' => l(t('Cancel'), 'admin/store/settings/orders/edit/sflead'),
   );
 
 
@@ -240,7 +240,7 @@ function uc_sflead_settings_mapping_validate($form, &$form_state){
             '%key' => $sfkey,
             '!edit' => l(
               t('edit'),
-              "admin/store/settings/checkout/edit/sflead/$sfkey/edit"
+              "admin/store/settings/orders/edit/sflead/$sfkey/edit"
             )
           )
         )
@@ -261,7 +261,7 @@ function uc_sflead_settings_mapping_submit($form, &$form_state) {
   else {
     drupal_write_record('uc_sflead_mapping', $write, array('sfkey'));
   }
-  $form_state['redirect'] = 'admin/store/settings/checkout/edit/sflead';
+  $form_state['redirect'] = 'admin/store/settings/orders/edit/sflead';
 }
 
 /**
@@ -285,7 +285,7 @@ function uc_sflead_settings_setting_submit($form, &$form_state) {
       drupal_write_record('uc_sflead_mapping', $obj);
     }
   }
-  $form_state['redirect'] = 'admin/store/settings/checkout/edit/sflead';
+  $form_state['redirect'] = 'admin/store/settings/orders/edit/sflead';
 }
 
 
@@ -305,7 +305,7 @@ function uc_sflead_mapping_delete_confirm(&$form_state, $mapping) {
 
   return confirm_form($form,
     t('Are you sure you want to delete mapping %key of type %type?', array('%key' => $mapping->sfkey, '%type' => $mapping->mapping_type)),
-    'admin/store/settings/checkout/edit/sflead',
+    'admin/store/settings/orders/edit/sflead',
     t('This action cannot be undone.'),
     t('Delete'),
     t('Cancel')
@@ -319,5 +319,5 @@ function uc_sflead_mapping_delete_confirm_submit($form, &$form_state) {
   $key = $form_state['values']['key'];
   uc_sflead_mapping_delete($key);
   uc_sflead_mapping_info(NULL, NULL, TRUE);
-  $form_state['redirect'] = 'admin/store/settings/checkout/edit/sflead';
+  $form_state['redirect'] = 'admin/store/settings/orders/edit/sflead';
 }
