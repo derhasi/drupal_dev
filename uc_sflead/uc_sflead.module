@@ -169,7 +169,7 @@ function uc_sflead_send($vars, $order_id = 0) {
   // Debugging
   $vars['debug'] = 1;
   $vars['debugEmail'] = 'derhaside@gmail.com';
-  // Flatten variables for http request. @see http://drupal.org/node/305498
+  // Flatten variables for http request.
   $data = http_build_query($vars, '', '&');
 
   // Request - tries up to 3 times, @see drupal_http_request().
