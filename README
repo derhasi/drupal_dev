@@ -1,4 +1,3 @@
 This repository is separated in different development branches.
 
-This branch is for an extension of http://drupal.org/project/uc_extra_fields_pane
-with several more field types.
+This branch is for a light salesforce lead module sending ubercart orders.
