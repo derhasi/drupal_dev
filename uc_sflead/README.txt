@@ -30,3 +30,15 @@ Seperators for variable value:
 Token support
 -------------
 Global, order and user values kan be return via token replacements.
+
+Debug Mode
+===========
+Salesforce provides a debug mode, that will send success messages to a defined
+mail address. Therefore add two new fixed mappings.
+
+sfkey       | mapping_type  | value
+------------------------------
+debug       | fixed         | 1
+debugEmail  | fixed         | yourmail@example.com
+
+
