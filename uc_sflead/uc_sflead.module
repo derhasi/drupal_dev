@@ -62,6 +62,10 @@ function uc_sflead_menu() {
 function uc_sflead_order($op, &$order, $new_status) {
   if ($op == 'update' && $new_status != 'in_checkout') {
     $vars = uc_sflead_build_vars($order);
+    // Debug Mode
+    if (variable_get('uc_sflead_debug_mode', FALSE) && module_exists('devel')) {
+      dpm($order, 'order');
+    }
     uc_sflead_send($vars, $order->order_id);
   }
 }
@@ -163,12 +167,6 @@ function uc_sflead_send($vars, $order_id = 0) {
   $headers = array(
     'Content-type' => 'text/html; charset=UTF-8',
   );
-  // Additional values
-  $vars['oid'] = '00D20000000N5gA';
-  $vars['retURL'] = 'http://';
-  // Debugging
-  $vars['debug'] = 1;
-  $vars['debugEmail'] = 'derhaside@gmail.com';
   // Flatten variables for http request.
   $data = http_build_query($vars, '', '&');
 
