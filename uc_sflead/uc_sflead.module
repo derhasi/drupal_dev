@@ -193,7 +193,7 @@ function uc_sflead_send($vars, $order_id = 0) {
 function _uc_sflead_mapping_settings() {
   return array(
     'oid' => NULL,
-    'retURL' => NULL,
+    //'retURL' => NULL,
   );
 }
 
