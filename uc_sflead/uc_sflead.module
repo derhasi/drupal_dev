@@ -175,6 +175,14 @@ function uc_sflead_send($vars, $order_id = 0) {
   // Request - tries up to 3 times, @see drupal_http_request().
   $ret = drupal_http_request($url, $headers, $method, $data);
 
+  // Debug Mode
+  if (variable_get('uc_sflead_debug_mode', FALSE)) {
+    watchdog('uc_sflead', $ret->data, array(), WATCHDOG_DEBUG);
+    if (module_exists('devel')) {
+      dpm($ret, 'uc_sflead_debug');
+    }
+  }
+
   // Pass logging information to watchdog and return boolean success indicator.
   $link = l(t('Order #@order', array('@order' => $order_id)), 'admin/store/orders/'. $order_id);
   if ($ret->code != 200) {

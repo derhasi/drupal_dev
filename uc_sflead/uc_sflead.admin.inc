@@ -35,6 +35,13 @@ function uc_sflead_settings_form(&$form_state) {
     );
   }
 
+  $form['debug'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Debug mode'),
+    '#default_value' => variable_get('uc_sflead_debug_mode', FALSE),
+    '#description' => t('Enabling debug mode will write response messages to watchdog and show response objects on order updates (if devel.module) is enabled.'),
+  );
+
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Submit'),
@@ -285,6 +292,10 @@ function uc_sflead_settings_setting_submit($form, &$form_state) {
       drupal_write_record('uc_sflead_mapping', $obj);
     }
   }
+
+  // Store debug value
+  variable_set('uc_sflead_debug_mode', $form_state['values']['debug']);
+
   $form_state['redirect'] = 'admin/store/settings/orders/edit/sflead';
 }
 
