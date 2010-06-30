@@ -178,11 +178,11 @@ function uc_sflead_send($vars, $order_id = 0) {
   // Pass logging information to watchdog and return boolean success indicator.
   $link = l(t('Order #@order', array('@order' => $order_id)), 'admin/store/orders/'. $order_id);
   if ($ret != 200) {
-    watchdog('uc_sflead', 'Salesforce request for order #@order failed with request code "@code"!', array('@order' => $order_id, '@code' => $ret->code), $link);
+    watchdog('uc_sflead', 'Salesforce request for order #@order failed with request code "@code"!', array('@order' => $order_id, '@code' => $ret->code), WATCHDOG_ERROR, $link);
     return FALSE;
   }
   else {
-    watchdog('uc_sflead', 'Succesfully sent salesforce request for Order #@order.', array('@order' => $order_id), $link);
+    watchdog('uc_sflead', 'Succesfully sent salesforce request for Order #@order.', array('@order' => $order_id), WATCHDOG_NOTICE, $link);
     return TRUE;
   }
 }
