@@ -36,8 +36,8 @@ function uc_sflead_menu() {
     'type' => MENU_CALLBACK,
   );
   $items['admin/store/settings/orders/edit/sflead/%uc_sflead_mapping'] = array(
-    'title' => 'Modify field',
-    'description' => 'Edit extra address field.',
+    'title' => 'Modify mapping',
+    'description' => 'Edit mapping.',
     'page arguments' => array('uc_sflead_settings_edit_mapping', 6),
     'file' => 'uc_sflead.admin.inc',
     'access arguments' => array('administer store'),
