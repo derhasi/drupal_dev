@@ -41,4 +41,6 @@ sfkey       | mapping_type  | value
 debug       | fixed         | 1
 debugEmail  | fixed         | yourmail@example.com
 
+The module's Debug Mode setting only affects Drupal. When checked, form response
+values are written to watchdog and outputted via devel.module.
 

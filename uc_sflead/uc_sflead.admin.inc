@@ -39,7 +39,7 @@ function uc_sflead_settings_form(&$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Debug mode'),
     '#default_value' => variable_get('uc_sflead_debug_mode', FALSE),
-    '#description' => t('Enabling debug mode will write response messages to watchdog and show response objects on order updates (if devel.module) is enabled.'),
+    '#description' => t('Enabling debug mode will write response messages to watchdog and show response objects on order updates (if devel.module) is enabled. You have to set a mapping for sfkey:<code>debug</code> to enable debug output for the reuqest on salesforce.'),
   );
 
   $form['submit'] = array(
