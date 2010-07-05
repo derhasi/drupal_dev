@@ -177,6 +177,10 @@ function uc_sflead_send($vars, $order_id = 0) {
   if (variable_get('uc_sflead_debug_mode', FALSE)) {
     watchdog('uc_sflead', $ret->data, array(), WATCHDOG_DEBUG);
     if (module_exists('devel')) {
+      dpm($url, 'request_url');
+      dpm($headers, 'request_headers');
+      dpm($method, 'request_method');
+      dpm($data, 'request_data');
       dpm($ret, 'uc_sflead_debug');
     }
   }
@@ -231,4 +235,3 @@ function uc_sflead_mapping_delete($key) {
   $query = "DELETE FROM {uc_sflead_mapping} WHERE sfkey = '%s'";
   db_query($query, $key);
 }
-
