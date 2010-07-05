@@ -165,13 +165,14 @@ function uc_sflead_send($vars, $order_id = 0) {
   $url = 'https://www.salesforce.com/servlet/servlet.WebToLead?encoding=UTF-8';
   $method = 'POST';
   $headers = array(
-    'Content-type' => 'text/html; charset=UTF-8',
+    'Content-type' => 'application/x-www-form-urlencoded; charset=UTF-8',
   );
   // Flatten variables for http request.
-  $data = http_build_query($vars, '', '&');
+  //$data = http_build_query($vars, '', '&');
+  $encoded = drupal_query_string_encode($vars);
 
   // Request - tries up to 3 times, @see drupal_http_request().
-  $ret = drupal_http_request($url, $headers, $method, $data);
+  $ret = drupal_http_request($url, $headers, $method, $encoded);
 
   // Debug Mode
   if (variable_get('uc_sflead_debug_mode', FALSE)) {
@@ -180,7 +181,7 @@ function uc_sflead_send($vars, $order_id = 0) {
       dpm($url, 'request_url');
       dpm($headers, 'request_headers');
       dpm($method, 'request_method');
-      dpm($data, 'request_data');
+      dpm($encoded, 'request_data_encoded');
       dpm($ret, 'uc_sflead_debug');
     }
   }
