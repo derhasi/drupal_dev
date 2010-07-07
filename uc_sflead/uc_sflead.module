@@ -236,3 +236,37 @@ function uc_sflead_mapping_delete($key) {
   $query = "DELETE FROM {uc_sflead_mapping} WHERE sfkey = '%s'";
   db_query($query, $key);
 }
+
+
+/**
+ * Implementation of hook_token_values().
+ *
+ * Provide a product-list token for token.module.
+ */
+function uc_sflead_token_values($type, $object = NULL) {
+  $values = array();
+  switch ($type) {
+    case 'order':
+      $order = $object;
+      $list = array();
+      if (is_array($order->products) && count($order->products)) {
+        foreach ($order->products as $product) {
+          $list[] = check_plain($product->title);
+        }
+        $values['order-product-list'] = implode("\n", $list);
+      }
+      break;
+  }
+  return $values;
+}
+
+/**
+ * Implementation of hook_token_list(). (token.module)
+ */
+function uc_sflead_token_list($type = 'all') {
+  $tokens = array();
+  if ($type == 'order' || $type == 'ubercart' || $type == 'all') {
+    $tokens['order']['order-product-list'] = t('Product list of titles.');
+  }
+  return $tokens;
+}
