@@ -1,0 +1,40 @@
+<?php
+// $Id: custom_breadcrumbs_trailidentifier.module - derhasi Exp $
+
+/**
+ * @file
+ * Provide special identifiers for use with custom breadcrumbs.
+ */
+
+/**
+ * Implementation of hook_cb_identifier_list().
+ */
+function custom_breadcrumbs_trailidentifier_cb_identifier_list() {
+  $identifiers = array();
+  $identifiers['<set_item>'] = t('Sets the appended path as current item.');
+  $identifiers['<set_item_no_link>'] = t('Sets the appended path as the current item and does not render the link.');
+
+  return $identifiers;
+}
+
+/**
+ * Implementation of hook_cb_identifier_values().
+ *
+ */
+function custom_breadcrumbs_trailidentifier_cb_identifier_values($identifier, $obj) {
+  $crumb_items = NULL;
+  switch ($identifier) {
+    case '<set_item>':
+    case '<set_item_no_link>':
+      $path = $obj['path'];
+      $form_item = array('link_path' => $path);
+      if ($path && menu_valid_path($form_item)) {
+        $item['href'] = $path;
+        menu_set_item(NULL, $item);
+      }
+      // Return empty array to render no link. NULL will render the default output.
+      return ($identifier == '<set_item>') ? NULL : array();
+      break;
+  }
+  return $crumb_items;
+}
