@@ -1,6 +1,0 @@
-; $Id$
-name = Custom Breadcrumbs Menu identifier
-package = Custom Breadcrumbs
-description = Adds special identifier for menu links to custom breadcrumbs.
-dependencies[] = custom_breadcrumbs
-core = 6.x
